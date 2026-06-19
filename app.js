@@ -200,6 +200,8 @@ function render() {
     board.style.display = '';
     emptyState.hidden   = true;
   }
+
+  actualizarProgreso();
 }
 
 function crearTarjeta(estudiante) {
@@ -540,22 +542,90 @@ function onSearch(e) {
 }
 
 /* ═══════════════════════ EXPORT / IMPORT ══════════════════ */
-function exportarDatos() {
-  if (estudiantes.length === 0) {
-    toast('No hay datos para exportar', 'info');
-    return;
-  }
+function exportarJSON() {
+  if (estudiantes.length === 0) { toast('No hay datos para exportar', 'info'); return; }
   const json = JSON.stringify(estudiantes, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `panel-atencion-${hoyISO()}.json`;
+  descargarBlob(new Blob([json], { type: 'application/json' }), `panel-atencion-${hoyISO()}.json`);
+  toast('Exportado como JSON ✓', 'success');
+}
+
+function exportarCSV() {
+  if (estudiantes.length === 0) { toast('No hay datos para exportar', 'info'); return; }
+  const cols  = ['Nombre', 'Fecha', 'Curso', 'Estado', 'Observaciones', 'Creado'];
+  const filas = estudiantes.map(e => [
+    csvVal(e.nombre),
+    csvVal(formatDate(e.fecha)),
+    csvVal(e.curso),
+    csvVal(e.estado.charAt(0).toUpperCase() + e.estado.slice(1)),
+    csvVal(e.observaciones || ''),
+    csvVal(e.creadoEn ? e.creadoEn.split('T')[0] : ''),
+  ]);
+  const contenido = [cols, ...filas].map(r => r.join(',')).join('\r\n');
+  // BOM para que Excel abra bien los tildes
+  const bom  = '\uFEFF';
+  descargarBlob(new Blob([bom + contenido], { type: 'text/csv;charset=utf-8;' }), `panel-atencion-${hoyISO()}.csv`);
+  toast('Exportado como CSV ✓ (abre en Excel)', 'success');
+}
+
+function csvVal(v) {
+  const s = String(v ?? '');
+  // Escapar comillas y envolver si contiene coma/salto
+  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+    ? `"${s.replace(/"/g, '""')}"`
+    : s;
+}
+
+function descargarBlob(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement('a'), { href: url, download: nombre });
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  toast('Datos exportados', 'success');
+}
+
+// Menú de exportación flotante
+function toggleExportMenu() {
+  let menu = document.getElementById('export-menu');
+  if (menu) { menu.remove(); return; }
+  menu = document.createElement('div');
+  menu.id        = 'export-menu';
+  menu.className = 'export-menu';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `
+    <button class="export-menu-item" id="exp-json" role="menuitem">
+      ${svgIcon('download')} Descargar JSON
+    </button>
+    <button class="export-menu-item" id="exp-csv" role="menuitem">
+      ${svgIcon('download')} Descargar CSV (Excel)
+    </button>
+  `;
+  const btn = document.getElementById('btn-export');
+  btn.parentElement.style.position = 'relative';
+  btn.parentElement.appendChild(menu);
+  menu.querySelector('#exp-json').addEventListener('click', () => { exportarJSON(); menu.remove(); });
+  menu.querySelector('#exp-csv').addEventListener('click',  () => { exportarCSV();  menu.remove(); });
+  // Cerrar al hacer clic fuera
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); }
+      document.removeEventListener('click', handler);
+    });
+  }, 0);
+}
+
+/* ─── Barra de progreso de atención ─────────────────────────── */
+function actualizarProgreso() {
+  const total     = estudiantes.length;
+  const atendidos = estudiantes.filter(e => e.estado === 'atendido').length;
+  const pct       = total === 0 ? 0 : Math.round((atendidos / total) * 100);
+
+  let barra = document.getElementById('progress-bar-fill');
+  let label = document.getElementById('progress-label');
+  if (!barra || !label) return;
+  barra.style.width    = `${pct}%`;
+  label.textContent    = total === 0 ? '' : `${pct}% atendidos`;
+  barra.setAttribute('aria-valuenow', pct);
 }
 
 function esEstudianteValido(e) {
@@ -718,7 +788,7 @@ function init() {
   document.getElementById('btn-tema').addEventListener('click', toggleTema);
 
   // Export / Import
-  document.getElementById('btn-export').addEventListener('click', exportarDatos);
+  document.getElementById('btn-export').addEventListener('click', toggleExportMenu);
   document.getElementById('btn-import').addEventListener('click', () =>
     document.getElementById('import-file').click());
   document.getElementById('import-file').addEventListener('change', e => {
@@ -787,6 +857,7 @@ function init() {
   }
 
   render();
+  actualizarProgreso();
 }
 
 function cargarEjemplos() {

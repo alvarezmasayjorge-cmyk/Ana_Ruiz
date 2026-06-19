@@ -141,6 +141,8 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body { overflow-x: hidden; }
+
 body {
   font-family: var(--font);
   background: var(--bg-page);
@@ -368,7 +370,7 @@ body {
   margin: var(--sp-6) auto var(--sp-3);
   padding: 0 var(--sp-6);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: var(--sp-4);
 }
 
@@ -382,7 +384,6 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 8px var(--clr-shadow);
   position: relative;
-  overflow: hidden;
 }
 
 .stat-item::before {
@@ -392,6 +393,7 @@ body {
   top: 0;
   bottom: 0;
   width: 4px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
 
 .stat-chip {
@@ -451,7 +453,7 @@ body {
   margin: var(--sp-5) auto var(--sp-10);
   padding: 0 var(--sp-6);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: var(--sp-5);
   align-items: start;
 }
@@ -463,6 +465,7 @@ body {
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 2px 8px var(--clr-shadow);
+  min-width: 0;
 }
 
 .column-header {
@@ -836,6 +839,8 @@ body {
   padding: var(--sp-6);
   width: 100%;
   max-width: 520px;
+  max-height: calc(100dvh - 2 * var(--sp-4));
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
   animation: modal-in var(--dur-slow) var(--ease);
 }
@@ -1076,28 +1081,25 @@ body {
 
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .board {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-bar {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .header-inner {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .header-actions {
     width: 100%;
+    flex-wrap: wrap;
   }
+
+  .search-wrapper { flex: 1 1 100%; }
 
   .search-input, .search-input:focus {
     width: 100%;
   }
 
-  .search-wrapper { flex: 1; }
+  .header-tools { flex: 0 0 auto; }
+
+  #btn-nuevo { flex: 1; justify-content: center; }
 }
 
 @media (max-width: 520px) {
@@ -1110,9 +1112,29 @@ body {
   .board { padding: 0 var(--sp-4); }
 
   .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
     margin: var(--sp-4) var(--sp-4) var(--sp-2);
     padding: 0;
     gap: var(--sp-3);
+  }
+
+  .stat-item {
+    padding: var(--sp-3);
+    gap: var(--sp-2);
+  }
+
+  .stat-chip {
+    width: 36px;
+    height: 36px;
+    font-size: var(--text-lg);
+  }
+
+  .stat-number { font-size: var(--text-xl); }
+
+  .stat-label {
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-size: var(--text-xs);
   }
 
   .toast-container {
@@ -1121,4 +1143,36 @@ body {
   }
 
   .toast { width: 100%; }
+}
+
+@media (max-width: 380px) {
+  .header-inner { padding: var(--sp-3); }
+  .brand-title  { font-size: var(--text-lg); }
+  .card         { padding: var(--sp-3); }
+  .column-body  { padding: var(--sp-2); }
+  .column-header { padding: var(--sp-3) var(--sp-4); }
+}
+
+/* ─── Táctil (punteros gruesos) ──────────────────────────────── */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .modal-close {
+    width: 40px;
+    height: 40px;
+  }
+
+  .icon-btn-lg {
+    width: 44px;
+    height: 44px;
+  }
+
+  .state-btn {
+    padding: var(--sp-3) var(--sp-2);
+  }
+
+  .card-grip { opacity: 0.5; }
 }
